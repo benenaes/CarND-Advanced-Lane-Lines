@@ -92,7 +92,7 @@ def load_calibration_params(filename):
 
 if __name__ == "__main__":
     image_files = glob2.glob("./camera_cal/*.jpg")
-    success, intrinsic_params, dist_coeffs = calibrate_camera()
+    success, intrinsic_params, dist_coeffs = calculate_camera_matrices()
     if success:
         save_calibration_params("camera_cal/calibration_data.p", intrinsic_params, dist_coeffs)
         gray_img1 = cv2.cvtColor(cv2.imread(image_files[3]), cv2.COLOR_BGR2GRAY)
