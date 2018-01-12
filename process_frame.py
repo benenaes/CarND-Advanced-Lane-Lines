@@ -14,13 +14,38 @@ from camera_parameters import CameraParameters
 
 
 def process_lanes(left_lane_history, right_lane_history):
+    """
+    Process the fits of the left and right lanes and check if the found lane lines are good candidates
+    :param left_lane_history: The statistics of the left lane line detection (containing the left lane line candidate)
+    :param right_lane_history: The statistics of the right lane line detection (containing the right lane line candidate)
+    :return: The adapted statistics of the left and right lane line containing smoothened or replaced fits
+    """
+    # Maximum number of subsequent bad fits before the lanes are not displayed anymore
+    max_bad_fits_for_non_detection = 20
+    # Maximum number of subsequent bad fits before a new histogram is made at the beginning of the lane line detection
+    # algorithm to find the peaks that are candidates to start the sliding window algorithm
+    max_bad_fits_for_lane_histogram = 3
+    # Maximum difference in pixels between subsequent detections of the same lane line
+    # to be accepted as a good candidate
+    max_diff_on_bottom_line = 100
+    # Maximum distance in between the lane lines on 2/3 of the warped view
+    max_lane_distance = 800
+    # Minimum distance in between the lane lines on 2/3 of the warped view
+    min_lane_distance = 400
+    # Minimum pixel height where the lane lines may intersect (outside the image) for the two fits to be good candidates
+    min_lane_line_intersection = -200
+    # Maximum pixel height where the lane lines can intersect (outside the image) for the two fits to be good candidates
+    max_lane_line_intersection = 920
+    # Maximum slope difference of the two lane lines to be accepted as good candidates
+    max_slope_difference = 1.0
+
     good_left_fit = True
     if left_lane_history.detected:
         candidate_bottom_line_intersection = int(left_lane_history.current_fit[0] * 719 ** 2
                                                          + left_lane_history.current_fit[1] * 719
                                                          + left_lane_history.current_fit[2])
         # The difference in between the current and the previous fit on the bottom line is too large
-        if abs(candidate_bottom_line_intersection - left_lane_history.bottom_line_intersection) > 100:
+        if abs(candidate_bottom_line_intersection - left_lane_history.bottom_line_intersection) > max_diff_on_bottom_line:
             good_left_fit = False
     else:
         good_left_fit = False
@@ -31,7 +56,7 @@ def process_lanes(left_lane_history, right_lane_history):
                                                           + right_lane_history.current_fit[1] * 719
                                                           + right_lane_history.current_fit[2])
         # The difference in between the current and the previous fit on the bottom line is too large
-        if abs(candidate_bottom_line_intersection - right_lane_history.bottom_line_intersection) > 100:
+        if abs(candidate_bottom_line_intersection - right_lane_history.bottom_line_intersection) > max_diff_on_bottom_line:
             good_right_fit = False
     else:
         good_right_fit = False
@@ -47,15 +72,16 @@ def process_lanes(left_lane_history, right_lane_history):
     if candidate_left_fit is None or candidate_right_fit is None:
         good_left_fit = False
         good_right_fit = False
-    # Slope must be more or less equal
-    elif abs(candidate_left_fit[1] - candidate_right_fit[1]) > 1.0:
+    # Slope must be more or less equal than max_slope_difference
+    elif abs(candidate_left_fit[1] - candidate_right_fit[1]) > max_slope_difference:
         good_left_fit = False
         good_right_fit = False
     else:
         # Check distance on the 2/3 of the screen height
         left_lane_x_pos = int(candidate_left_fit[0] * 480 ** 2 + candidate_left_fit[1] * 480 + candidate_left_fit[2])
         right_lane_x_pos = int(candidate_right_fit[0] * 480 ** 2 + candidate_right_fit[1] * 480 + candidate_right_fit[2])
-        if right_lane_x_pos - left_lane_x_pos > 800 or right_lane_x_pos - left_lane_x_pos < 400:
+        if right_lane_x_pos - left_lane_x_pos > max_lane_distance or \
+                                right_lane_x_pos - left_lane_x_pos < min_lane_distance:
             good_left_fit = False
             good_right_fit = False
         else:
@@ -70,7 +96,8 @@ def process_lanes(left_lane_history, right_lane_history):
 
             # If the crossings of the two lines are in the image or too close to the borders, then
             # the lines aren't parallel enough and thus the found solutions are probably bogus
-            if -200 < intersection_y_1 < 920 or -200 < intersection_y_2 < 920:
+            if min_lane_line_intersection < intersection_y_1 < max_lane_line_intersection or \
+                                    min_lane_line_intersection < intersection_y_2 < max_lane_line_intersection:
                 good_left_fit = False
                 good_right_fit = False
 
@@ -87,10 +114,10 @@ def process_lanes(left_lane_history, right_lane_history):
         left_lane_history.current_fit = left_lane_history.best_fit
         left_lane_history.bad_fits += 1
         # If the number of bad or no fits exceeds this number, then reset the bottom line intersection
-        if left_lane_history.bad_fits >= 3:
+        if left_lane_history.bad_fits >= max_bad_fits_for_lane_histogram:
             left_lane_history.bottom_line_intersection = None
         # If the number of bad or no fits exceeds this number, then the best fit is not applicable anymore
-        if left_lane_history.bad_fits >= 10:
+        if left_lane_history.bad_fits >= max_bad_fits_for_non_detection:
             left_lane_history.best_fit = None
 
     if good_right_fit:
@@ -106,10 +133,10 @@ def process_lanes(left_lane_history, right_lane_history):
         right_lane_history.current_fit = right_lane_history.best_fit
         right_lane_history.bad_fits += 1
         # If the number of bad or no fits exceeds this number, then reset the bottom line intersection
-        if right_lane_history.bad_fits >= 3:
+        if right_lane_history.bad_fits >= max_bad_fits_for_lane_histogram:
             right_lane_history.bottom_line_intersection = None
         # If the number of bad or no fits exceeds this number, then the best fit is not applicable anymore
-        if right_lane_history.bad_fits >= 10:
+        if right_lane_history.bad_fits >= max_bad_fits_for_non_detection:
             right_lane_history.best_fit = None
 
     return left_lane_history, right_lane_history
@@ -121,6 +148,15 @@ def draw_lanes_on_image(
         inverse_perspective_matrix,
         left_lane_history,
         right_lane_history):
+    """
+    Draws the lane in a transparent green color on the undistorted image using the fitted lane lines in the warped image
+    :param warped_image: The warped image
+    :param undistorted_image: The original, but undistorted image
+    :param inverse_perspective_matrix: The inverse perspective matrix to transform the warped image into the same coordinate system as the undistorted image
+    :param left_lane_history: The statistics of the left lane detection
+    :param right_lane_history: The statistics of the right lane detection
+    :return: The result image
+    """
     # Create an image to draw the lines on
     color_warp = np.zeros_like(warped_image).astype(np.uint8)
 
@@ -142,11 +178,54 @@ def draw_lanes_on_image(
 
     # Combine the result with the original image
     result = cv2.addWeighted(undistorted_image, 1, new_warp, 0.3, 0)
-    # plt.imshow(result)
     return result
 
 
+def calculate_radius_of_curvature_and_lane_offset(left_lane_history, right_lane_history):
+    """
+    Calculates the radius of curvature of the left and right lane lines and
+    the offset of the image towards the lane center
+    :param left_lane_history: The statistics of the left lane detection
+    :param right_lane_history: The statistics of the right lane detection
+    :return: The radius of curvature of the left and right lane lines and the lane offset
+    """
+    # Define conversions in x and y from pixels space to meters
+    ym_per_pix = 30 / 720  # meters per pixel in y dimension
+    xm_per_pix = 3.7 / 700  # meters per pixel in x dimension
+
+    plot_y = np.linspace(0, 719, num=720)
+    left_fit_x = left_lane_history.current_fit[0] * plot_y ** 2 \
+                 + left_lane_history.current_fit[1] * plot_y \
+                 + left_lane_history.current_fit[2]
+    right_fit_x = right_lane_history.current_fit[0] * plot_y ** 2 \
+                  + right_lane_history.current_fit[1] * plot_y \
+                  + right_lane_history.current_fit[2]
+    # Fit new polynomials to x,y in world space
+    left_fit_cr = np.polyfit(plot_y * ym_per_pix, left_fit_x * xm_per_pix, 2)
+    right_fit_cr = np.polyfit(plot_y * ym_per_pix, right_fit_x * xm_per_pix, 2)
+    # Calculate the new radii of curvature
+    left_curverad = ((1 + (2 * left_fit_cr[0] * 720 * ym_per_pix + left_fit_cr[1]) ** 2) ** 1.5) / np.absolute(
+        2 * left_fit_cr[0])
+    right_curverad = ((1 + (2 * right_fit_cr[0] * 720 * ym_per_pix + right_fit_cr[1]) ** 2) ** 1.5) / np.absolute(
+        2 * right_fit_cr[0])
+
+    # Calculate the lane offset
+    middle_lane = (left_fit_x[719] + right_fit_x[719]) * xm_per_pix / 2
+    middle_image = 640 * xm_per_pix
+    lane_offset = middle_lane - middle_image
+
+    return left_curverad, right_curverad, lane_offset
+
+
 def process_frame(image, camera_parameters, filter_output_folder=None, lane_detection_folder=None):
+    """
+    Processes a single image
+    :param image: The original image
+    :param camera_parameters: CameraParameters instance containing the perspective matrices and intrinsic parameters
+    :param filter_output_folder: Path to write results of the filter stage
+    :param lane_detection_folder: Path to write results of the lane line detection stage
+    :return: The image with the detected lane projected on it, together with added statistics
+    """
     filter_output_name = None
     if filter_output_folder is not None:
         filter_output_name = os.path.join(filter_output_folder, "filter" + str(process_frame.counter) + ".jpg")
@@ -187,6 +266,23 @@ def process_frame(image, camera_parameters, filter_output_folder=None, lane_dete
         inverse_perspective_matrix=camera_parameters.inverse_perspective_matrix,
         left_lane_history=left_lane_history,
         right_lane_history=right_lane_history)
+    if left_lane_history.current_fit is not None and right_lane_history.current_fit is not None:
+        left_curverad, right_curverad, lane_offset = \
+            calculate_radius_of_curvature_and_lane_offset(left_lane_history, right_lane_history)
+        average_curverad = (left_curverad + right_curverad) / 2.0
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        cv2.putText(result_img,
+                    'Radius of curvature:  %.4f' % average_curverad,
+                    (40, 40), font, 1, (255, 255, 255), 2,
+                    cv2.LINE_AA)
+        if lane_offset < 0:
+            car_position = "%.2f m left" % -lane_offset
+        else:
+            car_position = "%.2f m right" % lane_offset
+        cv2.putText(result_img,
+                    'Vehicle is %s of center:' % car_position,
+                    (40, 70), font, 1, (255, 255, 255), 2,
+                    cv2.LINE_AA)
     process_frame.lane_history.left_lane = left_lane_history
     process_frame.lane_history.right_lane = right_lane_history
     return result_img

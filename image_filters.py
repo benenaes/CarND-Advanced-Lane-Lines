@@ -71,6 +71,15 @@ def gradient_filter(
 
 
 def filter_image(orig_img, warped_image, show_results = False, results_output_file = None):
+    """
+    Applies gradient and color filters on the warped image to find good candidate points for lane lines
+    :param orig_img: The original image
+    :param warped_image: The warped image
+    :param show_results: Display the result if True.
+    :param results_output_file: The file to write all the intermediate results and the final result image
+                                of the filtering to
+    :return: Returns the filtered image
+    """
     hsv_img = cv2.cvtColor(warped_image, cv2.COLOR_RGB2HSV)
     saturation_channel = hsv_img[:, :, 1]
 
@@ -211,7 +220,14 @@ def filter_image(orig_img, warped_image, show_results = False, results_output_fi
     return all_combined
 
 
-def show_images_with_gradient_filter(intrinsic_params, dist_coeffs, perspective_matrix):
+def show_images_with_filter(intrinsic_params, dist_coeffs, perspective_matrix):
+    """
+    Helper function to investigate the filtering algorithm on a series of test images
+    :param intrinsic_params: Camera intrinsic parameters
+    :param dist_coeffs: Distortion coefficients
+    :param perspective_matrix: Perspective matrix
+    :return: Nothing
+    """
     left_lane_history, right_lane_history = None, None
     # for test_img in glob.glob('video_images/challenge/challenge-*.jpg'):
     for test_img in glob.glob('test_images/test*.jpg*'):
@@ -236,4 +252,4 @@ if __name__ == "__main__":
     perspective_matrix, inverse_perspective_matrix = load_perspective_matrices(
         "camera_cal/perspective_matrix.p")
 
-    show_images_with_gradient_filter(intrinsic_params, dist_coeffs, perspective_matrix)
+    show_images_with_filter(intrinsic_params, dist_coeffs, perspective_matrix)

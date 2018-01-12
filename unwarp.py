@@ -87,24 +87,12 @@ def load_perspective_matrices(filename):
         return None, None
 
 
-def find_perspective_matrix_on_straight_lanes(intrinsic_params, dist_coeffs, offset=250):
-    straight_lane_image_path = 'test_images/straight_lines2.jpg'
-    straight_lane_image = cv2.cvtColor(cv2.imread(straight_lane_image_path), cv2.COLOR_BGR2RGB)
-    undistorted_straight_lane_image = cv2.undistort(
-        straight_lane_image,
-        intrinsic_params, dist_coeffs)
-    # Handpicked coordinates
-    trapezoid = [(585, 456), (699, 456), (1055, 685), (266, 685)]
-    perspective_matrix, inverse_perspective_matrix = calculate_perspective_transform(
-        undistorted_straight_lane_image, trapezoid=trapezoid, offset=offset, show_transform=False)
-    return perspective_matrix, inverse_perspective_matrix
-
-
 if __name__ == "__main__":
     # Load the intrinsic parameters of the camera
     intrinsic_params, dist_coeffs = load_calibration_params("camera_cal/calibration_data.p")
 
-    # Test image with a straight line on a flat surface: perfect to use this to calculate the camera's perspective matrix
+    # Test image with a straight line on a flat surface:
+    # perfect to use this to calculate the camera's perspective matrix
     straight_lane_image_path = 'test_images/straight_lines2.jpg'
     straight_lane_image = cv2.cvtColor(cv2.imread(straight_lane_image_path), cv2.COLOR_BGR2RGB)
     undistorted_straight_lane_image = cv2.undistort(

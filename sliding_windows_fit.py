@@ -7,6 +7,13 @@ from lane_line_history import LaneLineHistory
 
 # https://jakevdp.github.io/PythonDataScienceHandbook/05.09-principal-component-analysis.html
 def draw_vector(v0, v1, ax=None):
+    """
+    Draw the vector of the principal component
+    :param v0: Center of the point cloud
+    :param v1: Direction and relative magnitude of the principal component
+    :param ax: Plot to draw to
+    :return:
+    """
     ax = ax or plt.gca()
     arrow_props = dict(
         arrowstyle='->',
@@ -47,12 +54,10 @@ def fit_polynomial_sliding_window(
         right_lane_history=None):
     """
     Searches for candidate points that belong to a lane line and then fits a second degree polynomial
-    :param binary_warped:
-    :param show_img:
-    :param save_img:
-    :param left_lane_history:
-    :param right_lane_history:
-    :return:
+    :param binary_warped: Binary warped image (already processed by the filtering algorithm)
+    :param left_lane_history: Statistics / history of the previous detection cycles of the left lane line
+    :param right_lane_history: Statistics / history of the previous detection cycles of the right lane line
+    :return: The updated lane line history instances containing new lane line candidates
     """
     if left_lane_history is None:
         left_lane_history = LaneLineHistory()
@@ -222,9 +227,6 @@ def fit_polynomial_sliding_window(
                     'Left:  X = %.4f Y^2 + %.4f Y + %.4f' % (left_lane_history.current_fit[0], left_lane_history.current_fit[1], left_lane_history.current_fit[2]),
                     (50, 50), font, 1, (255, 255, 255), 2,
                     cv2.LINE_AA)
-        # if bad_lanes_detection:
-        #     plt.plot(left_fit_x, plot_y, color='red')
-        # else:
         plt.plot(left_fit_x, plot_y, color='yellow')
     if right_lane_history.allx is not None:
         out_img[right_lane_history.ally, right_lane_history.allx] = [0, 0, 255]
@@ -237,21 +239,10 @@ def fit_polynomial_sliding_window(
                     'Right:  X = %.4f Y^2 + %.4f Y + %.4f' % (right_lane_history.current_fit[0], right_lane_history.current_fit[1], right_lane_history.current_fit[2]),
                     (50, 80), font, 1, (255, 255, 255), 2,
                     cv2.LINE_AA)
-        # if bad_lanes_detection:
-        #     plt.plot(right_fit_x, plot_y, color='red')
-        # else:
         plt.plot(right_fit_x, plot_y, color='yellow')
 
     plt.imshow(out_img)
     plt.xlim(0, 1280)
     plt.ylim(720, 0)
-
-    # if save_img is not None:
-    #     plt.savefig(save_img)
-
-    # if show_img:
-    #     _ = plt.show(block=True)
-    # else:
-        # plt.close(fig)
 
     return left_lane_history, right_lane_history, fig

@@ -6,6 +6,15 @@ from process_frame import process_frame
 from camera_parameters import CameraParameters
 
 def process_road_movie(input_file, output_file, camera_parameters, output_folder=None, time_frame=None):
+    """
+    Process an entire "road movie"
+    :param input_file: Path of the input MP4 file
+    :param output_file:  Path of the output file
+    :param camera_parameters: CameraParameters instance containing the perspective matrices and intrinsic parameters
+    :param output_folder: Path to write the results for each frame to (if not None)
+    :param time_frame: Time frame within the input MPEG-4 file to process
+    :return: Nothing
+    """
     if time_frame is not None:
         clip = VideoFileClip(input_file).subclip(time_frame[0], time_frame[1])
     else:

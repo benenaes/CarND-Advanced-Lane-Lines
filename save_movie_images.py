@@ -3,6 +3,12 @@ import cv2
 
 
 def save_clip(clip, dst_prefix):
+    """
+    Helper function to save all frames within a MPEG-4 file to separate JPEG files
+    :param clip: VideoFileClip instance
+    :param dst_prefix: Output folder
+    :return:
+    """
     idx = 0
     for frame in clip.iter_frames():
         dst = dst_prefix + str(idx) + ".jpg"

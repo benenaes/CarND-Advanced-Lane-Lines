@@ -2,6 +2,9 @@ import numpy as np
 
 
 class LaneLineHistory:
+    """
+    Statistics/history of the detection algorithm of a single lane line
+    """
     def __init__(self):
         # was the line detected in the last iteration?
         self.detected = False
@@ -29,6 +32,10 @@ class LaneLineHistory:
         self.bad_fits = 0
 
     def reset_for_detection(self):
+        """
+        Reset the statistics/history to prepare for a new cycle of the detection algorithm
+        :return:
+        """
         self.detection_windows = 0
         self.detected = False
         self.recent_xfitted = []
@@ -40,6 +47,9 @@ class LaneLineHistory:
 
 
 class LaneHistory:
+    """
+    Statistics/history of the detection algorithm of both lane lines
+    """
     def __init__(self):
         self.left_lane = LaneLineHistory()
         self.right_lane = LaneLineHistory()
