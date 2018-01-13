@@ -59,14 +59,12 @@ def gradient_filter(
     # Create a binary mask where direction and norm thresholds are met
     mask = np.zeros_like(gray_img)
     mask[(angles > gradient_thresh[0]) & (angles < gradient_thresh[1]) & (norm > norm_threshold)] = 1
-    # Apply morphological operations dilation and erosion if requested
+    # Apply morphological operations opening and closing if requested
     if morph_kernel_size:
         open_kernel = np.ones((3, 3), np.uint8)
         close_kernel = np.ones((morph_kernel_size, morph_kernel_size), np.uint8)
         mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel=open_kernel)
         mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel=close_kernel)
-        # mask = cv2.dilate(mask, kernel=kernel)
-        # mask = cv2.erode(mask, kernel=kernel)
     return mask
 
 

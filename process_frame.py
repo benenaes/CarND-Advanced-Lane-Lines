@@ -303,7 +303,7 @@ if __name__ == "__main__":
 
     left_lane_history, right_lane_history = None, None
     # for test_img in glob.glob('video_images/challenge/challenge-*.jpg'):
-    for test_img in glob.glob('test_images/test*.jpg*'):
+    for test_img in glob.glob('test_images/test*.jpg'):
         orig_img = cv2.cvtColor(cv2.imread(test_img), cv2.COLOR_BGR2RGB)
         process_frame(orig_img, camera_parameters=cam_params)
         _ = plt.show(block=True)

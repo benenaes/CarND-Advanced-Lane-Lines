@@ -93,7 +93,7 @@ def fit_polynomial_sliding_window(
             right_lane_history.bottom_line_intersection = right_x_current
 
     # Set the width of the windows +/- margin
-    margin = 50
+    margin = 100
     # Set minimum and maximum number of pixels found to perform PCA analysis
     min_pix = 80
     max_pix = 5000
